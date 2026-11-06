@@ -20,20 +20,26 @@ from http.server import HTTPServer, SimpleHTTPRequestHandler
 
 DIRECTORY = os.path.dirname(os.path.abspath(__file__))
 
-class CartolaProxyHandler(SimpleHTTPRequestHandler):
+class handler(SimpleHTTPRequestHandler):
+    """
+    HTTP handler compatible with standard library HTTPServer and Vercel Python runtime.
+    """
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, directory=DIRECTORY, **kwargs)
+        if 'directory' not in kwargs and DIRECTORY:
+            kwargs['directory'] = DIRECTORY
+        super().__init__(*args, **kwargs)
 
     def do_GET(self):
         parsed = urllib.parse.urlparse(self.path)
 
         # Handle API & Image Proxy endpoint: /proxy?url=<encoded_url>
-        if parsed.path == '/proxy':
+        if parsed.path in ('/proxy', '/server', '/api/proxy') or parsed.path.startswith('/proxy'):
             query = urllib.parse.parse_qs(parsed.query)
             target_url = query.get('url', [None])[0]
 
             if not target_url:
                 self.send_response(400)
+                self.send_header('Access-Control-Allow-Origin', '*')
                 self.end_headers()
                 self.wfile.write(b'Parametro url ausente')
                 return
@@ -43,6 +49,7 @@ class CartolaProxyHandler(SimpleHTTPRequestHandler):
             parsed_target = urllib.parse.urlparse(target_url)
             if not any(parsed_target.netloc.endswith(domain) for domain in allowed_domains):
                 self.send_response(403)
+                self.send_header('Access-Control-Allow-Origin', '*')
                 self.end_headers()
                 self.wfile.write(b'Dominio nao permitido pelo proxy')
                 return
@@ -95,6 +102,10 @@ class CartolaProxyHandler(SimpleHTTPRequestHandler):
         self.end_headers()
 
 
+# Alias for backward compatibility
+CartolaProxyHandler = handler
+
+
 def run():
     parser = argparse.ArgumentParser(description="Cartola Ghost 1v1 - Local Server")
     parser.add_argument("--port", "-p", type=int, default=8000, help="Porta do servidor (padrão: 8000)")
@@ -104,13 +115,13 @@ def run():
     server_address = ('', port)
 
     try:
-        httpd = HTTPServer(server_address, CartolaProxyHandler)
+        httpd = HTTPServer(server_address, handler)
     except OSError as e:
         if "Address already in use" in str(e):
             print(f"⚠️  Porta {port} ocupada. Tentando porta {port + 1}...")
             port += 1
             server_address = ('', port)
-            httpd = HTTPServer(server_address, CartolaProxyHandler)
+            httpd = HTTPServer(server_address, handler)
         else:
             raise
 
