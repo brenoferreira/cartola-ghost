@@ -1,0 +1,11 @@
+[project]
+name = "cartola-ghost"
+version = "0.1.0"
+description = "Visualização 3D de telemetria F1 do Cartola com WebGL puro"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = []
+
+[tool.uv]
+package = false
+python-preference = "system"

@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cartola Ghost 1v1 - F1 Telemetry Race</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Fullscreen 3D WebGL Canvas -->
+  <div id="canvas-container">
+    <canvas id="gl-canvas"></canvas>
+  </div>
+
+  <!-- Floating 3D Car Telemetry Tag Layer -->
+  <div id="car-labels-layer">
+    <div id="car-ghost-tag" class="car-floating-tag hidden">
+      <div class="tag-badge-wrapper">
+        <img id="car-ghost-badge-img" src="" alt="Escudo Time">
+      </div>
+      <div class="tag-info">
+        <div id="car-ghost-name" class="tag-name">Time Líder</div>
+        <div id="car-ghost-role-badge" class="role-badge ghost">LÍDER</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Heads-Up Display (HUD) -->
+  <div id="hud-overlay">
+
+    <!-- Top Telemetry Bar -->
+    <header class="top-header interactive">
+      <div class="brand-section">
+        <span class="brand-badge">F1 GHOST</span>
+        <div>
+          <div class="brand-title">CARTOLA TELEMETRY 1v1</div>
+          <div class="brand-sub">DUELO 3D EM LINHA RETA</div>
+        </div>
+      </div>
+
+      <div class="telemetry-center">
+        <div class="round-tracker">
+          <span class="round-label">RODADA</span>
+          <div class="round-digits">
+            <span id="hud-round-num">01</span> / <small id="hud-round-total">34</small>
+          </div>
+          <div class="progress-track">
+            <div id="hud-progress-fill" class="progress-fill"></div>
+          </div>
+        </div>
+
+        <div class="gap-tracker">
+          <span class="gap-label">DIFERENÇA (GAP)</span>
+          <span id="hud-gap-value" class="gap-value">0.0 PTS</span>
+        </div>
+      </div>
+
+      <div class="top-actions">
+        <button id="btn-mute" class="icon-btn" title="Alternar Som F1 (Web Audio)">
+          <span id="mute-icon">🔇</span>
+        </button>
+        <button id="btn-settings" class="icon-btn" title="Configurar Times / IDs">
+          ⚙️
+        </button>
+      </div>
+    </header>
+
+    <!-- Overtake Flash Banner -->
+    <div id="overtake-alert" class="overtake-banner hidden">
+      <span id="overtake-text" class="overtake-text">OVERTAKE! PREGEREBA FC ASSUME A LIDERANÇA!</span>
+    </div>
+
+    <!-- Side Telemetry Cards -->
+    <div class="middle-telemetry">
+      <!-- Team 1 Card (Left Lane) -->
+      <div class="team-hud-card left interactive">
+        <div class="team-header">
+          <div class="team-badge-wrapper">
+            <img id="t1-badge-img" src="" alt="Escudo Time 1">
+          </div>
+          <div class="team-info">
+            <div id="t1-name" class="team-name">Pregereba FC</div>
+            <div id="t1-coach" class="team-coach">Alexandre Saboia</div>
+            <div id="t1-role-badge" class="role-badge ghost">LÍDER</div>
+          </div>
+        </div>
+
+        <div class="score-stats">
+          <div class="stat-item">
+            <span class="stat-title">NA RODADA</span>
+            <span id="t1-round-score" class="stat-value">+0.0</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-title">CAMPEONATO</span>
+            <span id="t1-cum-score" class="stat-value highlight">0.0</span>
+          </div>
+        </div>
+
+        <div id="t1-top-player" class="top-player-flavor">★ Destaque: -</div>
+      </div>
+
+      <!-- Team 2 Card (Right Lane) -->
+      <div class="team-hud-card right interactive">
+        <div class="team-header">
+          <div class="team-badge-wrapper">
+            <img id="t2-badge-img" src="" alt="Escudo Time 2">
+          </div>
+          <div class="team-info">
+            <div id="t2-name" class="team-name">Ghost Rival FC</div>
+            <div id="t2-coach" class="team-coach">Desafiante F1</div>
+            <div id="t2-role-badge" class="role-badge solid">PERSEGUIDOR</div>
+          </div>
+        </div>
+
+        <div class="score-stats">
+          <div class="stat-item">
+            <span class="stat-title">NA RODADA</span>
+            <span id="t2-round-score" class="stat-value">+0.0</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-title">CAMPEONATO</span>
+            <span id="t2-cum-score" class="stat-value highlight">0.0</span>
+          </div>
+        </div>
+
+        <div id="t2-top-player" class="top-player-flavor">★ Destaque: -</div>
+      </div>
+    </div>
+
+    <!-- Bottom Controls Deck -->
+    <footer class="bottom-deck interactive">
+      <!-- Scrubbing Timeline Slider -->
+      <div class="slider-container">
+        <span class="slider-label">R01</span>
+        <input type="range" id="round-slider" class="timeline-slider" min="1" max="34" step="0.05" value="1">
+        <span class="slider-label" id="slider-max-label">R34</span>
+      </div>
+
+      <!-- Controls & View Mode -->
+      <div class="controls-bar">
+        <!-- Play / Pause / Replay -->
+        <div class="playback-group">
+          <button id="btn-play-pause" class="play-btn" title="Play / Pausa">
+            <span id="play-icon">▶</span>
+            <span id="pause-icon" class="hidden">⏸</span>
+          </button>
+          <button id="btn-replay" class="replay-btn" title="Reiniciar do Início">
+            ⏮
+          </button>
+        </div>
+
+        <!-- Speed Selector -->
+        <div class="speed-group">
+          <button class="pill-btn speed-btn" data-speed="0.5">0.5x</button>
+          <button class="pill-btn speed-btn active" data-speed="1.0">1.0x</button>
+          <button class="pill-btn speed-btn" data-speed="2.0">2.0x</button>
+          <button class="pill-btn speed-btn" data-speed="4.0">4.0x</button>
+        </div>
+
+        <!-- Camera Views -->
+        <div class="cam-group">
+          <button class="pill-btn cam-btn active" data-cam="CHASE">🎥 CHASE</button>
+          <button class="pill-btn cam-btn" data-cam="COCKPIT">🏎️ COCKPIT</button>
+          <button class="pill-btn cam-btn" data-cam="SIDE_TV">📺 TV BROADCAST</button>
+          <button class="pill-btn cam-btn" data-cam="DRONE">🛸 DRONE</button>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Setup Modal (Team IDs) -->
+  <div id="setup-modal" class="modal-overlay hidden">
+    <div class="modal-card interactive">
+      <div class="modal-header">
+        <h2>CONFIGURAR DUELO CARTOLA 1v1</h2>
+        <p>Informe o ID de dois times no Cartola para visualizar a telemetria 3D de todas as rodadas.</p>
+      </div>
+
+      <div class="inputs-row">
+        <div class="input-field">
+          <label for="team1-id-input">ID TIME 1 (Ex: Pregereba FC)</label>
+          <input type="text" id="team1-id-input" value="3136" placeholder="3136">
+          <span>Padrão do prompt: Alexandre Saboia</span>
+        </div>
+        <div class="input-field">
+          <label for="team2-id-input">ID TIME 2 (Rival)</label>
+          <input type="text" id="team2-id-input" value="7788" placeholder="7788">
+          <span>Qualquer time válido no Cartola</span>
+        </div>
+      </div>
+
+      <div class="modal-hint">
+        💡 <strong>Dica F1 Ghost:</strong> O time com maior pontuação acumulada é renderizado como <em>Ghost</em> (holograma translúcido na frente), enquanto o perseguidor corre sem transparência. Quando há ultrapassagem, os papéis se invertem em tempo real!
+      </div>
+
+      <div class="modal-actions">
+        <button id="btn-start-race" class="primary-btn">BUSCAR APIS & INICIAR CORRIDA 3D</button>
+        <button id="btn-demo-race" class="secondary-btn">SIMULAÇÃO INSTANTÂNEA (SEM ESPERAR API)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading Overlay -->
+  <div id="loading-overlay" class="loading-overlay hidden">
+    <div class="loading-box interactive">
+      <div class="loading-spinner"></div>
+      <div id="loading-message" class="loading-msg">Conectando às APIs do Cartola...</div>
+      <div class="loading-bar-track">
+        <div id="loading-bar-fill" class="loading-bar-fill"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Vanilla Scripts (No external libraries) -->
+  <script src="js/math3d.js"></script>
+  <script src="js/cartola-service.js"></script>
+  <script src="js/sound-fx.js"></script>
+  <script src="js/webgl-renderer.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
